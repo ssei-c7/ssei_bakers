@@ -1,0 +1,148 @@
+<!-- confirm.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>SSEI Bakers — Confirmation</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <style>
+    :root{
+      --bg1:#02040b; --bg2:#0b0f1a;
+      --accentA:#7b2ff7; --accentB:#00d2ff;
+      --muted:#a8bed0;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:
+      radial-gradient(800px 400px at 10% 20%, rgba(123,47,247,0.06), transparent 10%),
+      radial-gradient(900px 500px at 90% 80%, rgba(0,210,255,0.05), transparent 10%),
+      linear-gradient(180deg,var(--bg1),var(--bg2)); color:#eaf6ff}
+    #confCanvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+    .stage{position:relative;z-index:10;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    .box{width:520px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:26px;border-radius:14px;box-shadow:0 18px 80px rgba(2,6,23,0.7);backdrop-filter:blur(8px);text-align:center;animation:pop .28s ease both}
+    @keyframes pop{from{opacity:0; transform:scale(.98) translateY(12px)} to{opacity:1; transform:none}}
+
+    .logo{width:90px;height:90px;margin:0 auto;border-radius:12px;overflow:hidden}
+    .logo img{width:100%;height:100%;object-fit:contain}
+
+    h2{margin:14px 0 6px 0;color:var(--accentB);text-shadow:0 6px 28px rgba(0,210,255,0.06)}
+    h1{margin:6px 0 16px 0;color:var(--accentA)}
+
+    .orderNum{font-size:26px;letter-spacing:1px;margin:6px 0 12px}
+    .deduct{font-size:15px;color:var(--muted);margin-top:8px}
+    .receipt{text-align:left;background:rgba(0,0,0,0.05);padding:12px;border-radius:10px;margin-top:12px;border:1px solid rgba(255,255,255,0.02)}
+    .line{display:flex;justify-content:space-between;padding:6px 0;color:#e6f6ff}
+    .muted{color:var(--muted);font-size:13px}
+    .progress{height:10px;background:rgba(255,255,255,0.03);border-radius:8px;margin-top:12px;overflow:hidden}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,var(--accentB),var(--accentA));border-radius:8px;transition:width .4s ease}
+
+    .footBtn{margin-top:18px;padding:12px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accentA),var(--accentB));color:#071018;font-weight:700;cursor:pointer}
+    .footBtn:hover{transform:translateY(-3px)}
+  </style>
+</head>
+<body>
+  <canvas id="confCanvas"></canvas>
+  <div class="stage">
+    <div class="box">
+      <div class="logo"><img src="assets/ssei_logo.png" alt="SSEI Bakers"></div>
+      <h2>Order Confirmed</h2>
+      <div id="orderNumber" class="orderNum">—</div>
+
+      <div class="receipt" id="receipt">
+        <div class="line"><div class="muted">Bank</div><div id="bankInfo" class="muted">—</div></div>
+        <div id="itemsContainer"></div>
+        <div class="line"><div class="muted">Extras</div><div id="extrasInfo" class="muted">—</div></div>
+        <div class="line"><div class="muted">Delivery</div><div id="deliveryInfo" class="muted">—</div></div>
+        <div class="line" style="font-weight:700"><div>Total</div><div id="totalInfo">$0</div></div>
+
+        <div class="progress" aria-hidden="true"><div id="bar" class="bar"></div></div>
+        <div id="priceMsg" class="deduct">—</div>
+      </div>
+
+      <button class="footBtn" id="backBtn" onclick="window.location.href='order.html'">Back to Bakery Page</button>
+    </div>
+  </div>
+
+  <script>
+    // confetti canvas basic
+    const canvas = document.getElementById('confCanvas'), ctx = canvas.getContext('2d');
+    let W=canvas.width=innerWidth, H=canvas.height=innerHeight;
+    const pieces=[];
+    function spawnConfetti(){
+      for(let i=0;i<60;i++){
+        pieces.push({
+          x: W/2 + (Math.random()-0.5)*300,
+          y: H/4 + (Math.random()-0.5)*80,
+          vx: (Math.random()-0.5)*6,
+          vy: 2+Math.random()*6,
+          r: 4+Math.random()*8,
+          ang: Math.random()*Math.PI*2,
+          color: ['#7b2ff7','#00d2ff','#ffd166','#4ad5a8'][Math.floor(Math.random()*4)]
+        });
+      }
+    }
+    function confettiAnim(){
+      ctx.clearRect(0,0,W,H);
+      for(let p of pieces){
+        p.x += p.vx; p.y += p.vy; p.ang += 0.1;
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.ang);
+        ctx.fillStyle=p.color; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.6);
+        ctx.restore();
+      }
+      requestAnimationFrame(confettiAnim);
+    }
+
+    // load order
+    const order = JSON.parse(localStorage.getItem('ssei_pending_order') || 'null');
+    function generateOrderNumber(){
+      const num = 'SSEI-' + (Math.floor(100000 + Math.random()*899999));
+      return num;
+    }
+
+    window.addEventListener('load',()=>{
+      if(!order){ document.getElementById('orderNumber').innerText='No order found'; document.getElementById('priceMsg').innerText='Please place an order first.'; return; }
+      document.getElementById('orderNumber').innerText = generateOrderNumber();
+      document.getElementById('bankInfo').innerText = order.bank_mask || '—';
+
+      // render items list (supports multiple items)
+      const itemsContainer = document.getElementById('itemsContainer');
+      itemsContainer.innerHTML = '';
+      if(order.items && order.items.length){
+        order.items.forEach(it => {
+          const el = document.createElement('div');
+          el.className = 'line';
+          el.innerHTML = `<div class="muted">${it.qty} × ${it.name}</div><div class="muted">$${(it.price * it.qty).toFixed(2)}</div>`;
+          itemsContainer.appendChild(el);
+        });
+      } else {
+        itemsContainer.innerHTML = '<div class="line"><div class="muted">No items</div><div class="muted">$0</div></div>';
+      }
+
+      document.getElementById('extrasInfo').innerText = order.extras && order.extras.length ? order.extras.join(', ') : 'None';
+      document.getElementById('deliveryInfo').innerText = order.delivery || '—';
+      document.getElementById('totalInfo').innerText = '$' + (order.total || 0);
+
+      // simulate payment deduction with progress bar faster
+      const bar = document.getElementById('bar');
+      let pct = 0;
+      const step = () => {
+        pct += 14 + Math.random()*22; if(pct>100) pct=100;
+        bar.style.width = pct + '%';
+        if(pct < 100) setTimeout(step, 140);
+        else {
+          // finalize message & confetti
+          document.getElementById('priceMsg').innerText = 'Amount $' + order.total + ' has been deducted from your account.';
+          spawnConfetti(); confettiAnim();
+          // clear pending order after a brief delay
+          setTimeout(()=> localStorage.removeItem('ssei_pending_order'), 1600);
+        }
+      };
+      setTimeout(step, 180);
+    });
+
+    addEventListener('resize', ()=>{W=canvas.width=innerWidth; H=canvas.height=innerHeight;});
+
+    // do NOT add keyboard navigation that directly opens other pages (per request)
+  </script>
+</body>
+</html>

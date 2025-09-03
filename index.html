@@ -1,0 +1,270 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SSEI Bakers — Bank Page</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --bg1:#0b1020;
+      --bg2:#151829;
+      --accent1:#7b2ff7; /* purple */
+      --accent2:#00d2ff; /* teal */
+      --card:#121218;
+      --glass: rgba(255,255,255,0.04);
+      --glass-strong: rgba(255,255,255,0.06);
+      --muted:#9aa3b2;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:
+      radial-gradient(1200px 600px at 10% 20%, rgba(123,47,247,0.12), transparent 10%),
+      radial-gradient(900px 500px at 90% 80%, rgba(0,210,255,0.08), transparent 10%),
+      linear-gradient(180deg,var(--bg1),var(--bg2));
+      color:#e7eef7; -webkit-font-smoothing:antialiased;}
+    /* animated particles canvas */
+    #particles{position:fixed;inset:0;z-index:0;pointer-events:none;mix-blend-mode:screen;opacity:0.55}
+
+    .app {
+      position:relative;
+      z-index:10;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px;
+    }
+
+    .card {
+      width:420px;
+      border-radius:14px;
+      padding:22px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 8px 40px rgba(11,18,32,0.7), 0 1px 0 rgba(255,255,255,0.02) inset;
+      backdrop-filter: blur(8px) saturate(1.1);
+      border: 1px solid rgba(255,255,255,0.03);
+      text-align:center;
+      animation: cardIn .35s cubic-bezier(.2,.9,.2,1);
+    }
+    @keyframes cardIn{
+      from{opacity:0; transform:translateY(18px) scale(.995)}
+      to{opacity:1; transform:translateY(0) scale(1)}
+    }
+
+    .brand {
+      display:flex; align-items:center; gap:12px; justify-content:center;
+      margin-bottom:6px;
+    }
+    .brand img{width:72px;height:72px;object-fit:contain;border-radius:10px;filter:drop-shadow(0 6px 18px rgba(123,47,247,0.12));}
+    .brand h1{font-size:20px;margin:0;letter-spacing:0.6px}
+    .brand p{margin:0;font-size:13px;color:var(--muted)}
+
+    form {margin-top:14px; display:flex; flex-direction:column; gap:10px; align-items:center}
+    .input {
+      width:100%;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      background:var(--glass);
+      padding:10px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.02);
+    }
+    .input input, .input select {
+      background:transparent;border:0;color:inherit;font-size:14px;outline:none;width:100%;
+    }
+    .input .icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent1),var(--accent2));box-shadow:0 6px 18px rgba(0,0,0,0.6);}
+
+    .note{font-size:12px;color:var(--muted);margin-top:6px}
+    .cta {
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      font-weight:600;
+      border:0;
+      cursor:pointer;
+      background:linear-gradient(90deg,var(--accent2),var(--accent1));
+      color:#08101a;
+      transition:transform .18s ease, box-shadow .18s ease;
+      box-shadow:0 8px 30px rgba(123,47,247,0.12);
+    }
+    .cta:active{transform:translateY(2px)}
+    .cta:hover{box-shadow:0 12px 40px rgba(0,210,255,0.12); transform:translateY(-3px)}
+
+    /* tiny tooltip style for payment method select */
+    .hint {font-size:12px;color:var(--muted);margin-top:6px}
+
+    /* keyboard hint (now only toggles help, not navigation) */
+    .kbd {display:inline-block;background:#0f1318;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);font-size:12px;margin-left:8px;color:var(--muted)}
+
+    /* custom cursor visuals */
+    .cursor, .cursor-f {
+      position:fixed; pointer-events:none; z-index:9999; mix-blend-mode:screen;
+      transform:translate(-50%,-50%);
+    }
+    .cursor{width:10px;height:10px;background:linear-gradient(90deg,var(--accent1),var(--accent2));border-radius:50%;box-shadow:0 0 18px rgba(0,0,0,0.5);opacity:0.95;transition:transform .12s ease,opacity .12s}
+    .cursor-f{width:36px;height:36px;border-radius:50%;background:transparent;border:1px solid rgba(255,255,255,0.06);box-shadow:0 6px 26px rgba(123,47,247,0.06);transition:transform .14s ease,opacity .14s}
+
+    .cursor-hover { transform: scale(1.8); opacity: 0.85; }
+    .cursorF-hover { transform: scale(1.25); opacity: 0.9; }
+
+    /* help overlay */
+    .help {
+      position:fixed; right:22px; top:22px; width:320px; max-width:calc(100% - 44px);
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px; padding:12px; box-shadow:0 18px 60px rgba(2,6,23,0.7); display:none; z-index:9998;
+      color:#eaf6ff; font-size:13px;
+    }
+    .help h4{margin:0 0 8px 0}
+    .help p{margin:6px 0;color:var(--muted); font-size:13px}
+
+    /* fix for select/options visibility */
+    select { color: #eaf6ff; background: #0b1116; -webkit-appearance: none; appearance: none; padding-right: 28px }
+    select option { background: #0b1116; color: #eaf6ff }
+
+    /* footer tiny */
+    .foot{font-size:12px;color:var(--muted);margin-top:12px}
+
+    @media (max-width:480px){.card{width:92%;padding:16px}}
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-f" id="cursorF"></div>
+
+  <div class="help" id="helpBox" role="dialog" aria-hidden="true">
+    <h4>Quick Help</h4>
+    <p>- Create your bank account here before placing orders.</p>
+    <p>- Use the bakery page to select items (cakes, pizza, fries, drinks).</p>
+    <p>- You can toggle this help with the <strong>H</strong> key (no navigation).</p>
+  </div>
+
+  <div class="app">
+    <div class="card" role="region" aria-label="Bank account setup">
+      <div class="brand">
+        <img src="assets/bank_icon.png" alt="Bank logo">
+        <div style="text-align:left">
+          <h1>SSEI <strong style="display:block">Bakers</strong></h1>
+          <p class="note">Secure payments • Fast checkout</p>
+        </div>
+      </div>
+
+      <form id="bankForm" onsubmit="return saveBank(event)">
+        <div class="input" title="Enter account holder name">
+          <div class="icon">🏦</div>
+          <input id="fullName" name="fullName" placeholder="Full name" required />
+        </div>
+
+        <div class="input" title="Your bank account number will be used for payments">
+          <div class="icon">🔢</div>
+          <input id="bankNumber" name="bankNumber" placeholder="Bank account number" required />
+        </div>
+
+        <div class="input" title="Choose a payment method">
+          <div class="icon">💳</div>
+          <select id="paymentMethod" required>
+            <option value="">Select payment method</option>
+            <option value="card">Credit / Debit Card</option>
+            <option value="paypal">PayPal</option>
+            <option value="cod">Cash on Delivery (Hold)</option>
+            <option value="wallet">SSEI Wallet</option>
+            <option value="bank_transfer">Bank Transfer</option>
+          </select>
+        </div>
+
+        <div class="hint">Tip: Press <span class="kbd">H</span> to toggle quick help (no direct navigation).</div>
+
+        <button class="cta" type="submit">Proceed to Bakery</button>
+        <div class="foot">We never store full card numbers. Your privacy is protected.</div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // particles background (light, performant) - unchanged behavior from provided script
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let w = canvas.width = innerWidth;
+    let h = canvas.height = innerHeight;
+    const particles = [];
+    for (let i=0;i<60;i++){
+      particles.push({
+        x: Math.random()*w,
+        y: Math.random()*h,
+        r: 0.8 + Math.random()*2.4,
+        vx: (Math.random()-0.5)*0.2,
+        vy: -0.2 - Math.random()*0.2,
+        life: 60 + Math.random()*140
+      });
+    }
+    function tick(){
+      ctx.clearRect(0,0,w,h);
+      for (let p of particles){
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if (p.y < -20 || p.life<0){ p.x=Math.random()*w; p.y=h+20; p.life=120+Math.random()*160; }
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(123,47,247,0.08)";
+        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fill();
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+    addEventListener('resize',()=>{w=canvas.width=innerWidth; h=canvas.height=innerHeight;});
+
+    // custom cursor with follower + improved hover reaction
+    const cursor = document.getElementById('cursor'), cursorF=document.getElementById('cursorF');
+    let mx=window.innerWidth/2,my=window.innerHeight/2,fx=mx,fy=my;
+    window.addEventListener('mousemove',(e)=>{mx=e.clientX; my=e.clientY; cursor.style.left=mx+'px'; cursor.style.top=my+'px';});
+    function loop(){ fx += (mx-fx)*0.18; fy += (my-fy)*0.18; cursorF.style.left=fx+'px'; cursorF.style.top=fy+'px'; requestAnimationFrame(loop); }
+    loop();
+
+    // enlarge cursor on hover for interactive elements
+    const hoverTargets = ['button','a','input','select','textarea','.cta'];
+    function setHoverState(on){
+      if(on){
+        cursor.classList.add('cursor-hover');
+        cursorF.classList.add('cursorF-hover');
+      } else {
+        cursor.classList.remove('cursor-hover');
+        cursorF.classList.remove('cursorF-hover');
+      }
+    }
+    // attach listeners (delegation for dynamic elements)
+    document.body.addEventListener('pointerover', (e) => {
+      const t = e.target;
+      if (t.closest && t.closest('button, a, input, select, textarea, .cta')) setHoverState(true);
+    });
+    document.body.addEventListener('pointerout', (e) => {
+      const t = e.target;
+      if (t.closest && t.closest('button, a, input, select, textarea, .cta')) setHoverState(false);
+    });
+
+    // Save bank details then go to order page
+    function saveBank(e){
+      if(e) e.preventDefault();
+      const name=document.getElementById('fullName').value.trim();
+      const bank=document.getElementById('bankNumber').value.trim();
+      const method=document.getElementById('paymentMethod').value;
+      if(!name||!bank||!method) return false;
+      localStorage.setItem('ssei_bank_name', name);
+      localStorage.setItem('ssei_bank_number', bank);
+      localStorage.setItem('ssei_payment_method', method);
+      // smooth transition
+      document.querySelector('.card').style.transform='translateY(-20px) scale(.98)'; setTimeout(()=>location.href='order.html',220);
+      return false;
+    }
+
+    // toggle quick help with H (does not navigate)
+    const helpBox = document.getElementById('helpBox');
+    window.addEventListener('keydown', (e)=>{
+      if(e.key.toLowerCase()==='h'){
+        const visible = helpBox.style.display === 'block';
+        helpBox.style.display = visible ? 'none' : 'block';
+        helpBox.setAttribute('aria-hidden', visible ? 'true' : 'false');
+      }
+    });
+  </script>
+</body>
+</html>
